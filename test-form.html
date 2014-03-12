@@ -1,0 +1,44 @@
+
+<H3>Play with these fields</H3>
+<div class="row">
+	<div class="col-md-6">
+		<div class="form-group">
+			<label>field A</label>
+			<input type="text" class="form-control" ng-model="form.a" >
+		</div>
+		<div class="form-group">
+			<label>Date test</label>
+			<div class="row">
+				<div class="col-xs-6">
+					Meet me on <input class="form-control" type="text" pick-a-date="form.ddd" />
+				</div>
+				<div class="col-xs-6">
+					@ <input class="form-control" type="text" pick-a-time="form.ddd" />
+				</div>
+			</div>
+		</div>
+		<div class="form-group">
+			<label>Pick some stuff:</label>
+			<div >
+				<input type="checkbox" value="Peacock" check-list="form.birdSelection"  />
+				<label> Peacock</label>
+			</div>
+			<div >
+				<input type="checkbox" value="Quail" check-list="form.birdSelection"  />
+				<label> Quail</label>
+			</div>
+			<div >
+				<input type="checkbox" value="Rooster" check-list="form.birdSelection"  />
+				<label> Naughty Rooster</label>
+			</div>
+		</div>
+		<H3>Now press this and watch the URL</H3>
+		<div class="form-group">
+			<button class="btn btn-info" ng-click="doSearch()">Search!</button>
+		</div>
+	</div>
+	<div class="col-md-6">
+		<pre>{{ form | json }}</pre>
+	</div>
+</div>
+
