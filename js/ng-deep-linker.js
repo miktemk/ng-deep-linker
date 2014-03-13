@@ -1,4 +1,4 @@
-var lastGo = null;
+// Find this on GitHub https://github.com/miktemk/ng-deep-linker
 
 function NgDeepLinker($location, $rootScope, $state) {
 	var self = this;
@@ -39,32 +39,38 @@ function NgDeepLinker($location, $rootScope, $state) {
 		return params;
 	}
 	
+	/// from URL params to obj for a single field
+	function _mapFieldToObj(field, params) {
+		if (field.isArray) {
+			var arrResult = [];
+			if (params[field.urlName]) {
+				var arr = params[field.urlName].split(',');
+				for (var i = 0; i < arr.length; i++) {
+					var elem = field.mapFrom
+						? field.mapFrom(arr[i])
+						: arr[i];
+					if (elem != null && elem != undefined)
+						arrResult.push(elem);
+				}
+			}
+			return arrResult;
+		}
+		else {
+			var result = null;
+			if (params[field.urlName]) {
+				result = field.mapFrom
+					? field.mapFrom(params[field.urlName])
+					: params[field.urlName];
+			}
+			return result;
+		}
+	}
+	
 	/// from URL params to obj
 	function convertToObj(params) {
 		var obj = {};
 		$.each(fields, function (i, field) {
-			if (field.isArray) {
-				var arrResult = [];
-				if (params[field.urlName]) {
-					var arr = params[field.urlName].split(',');
-					for (var i = 0; i < arr.length; i++) {
-						var elem = field.mapFrom
-							? field.mapFrom(arr[i])
-							: arr[i];
-						if (elem != null && elem != undefined)
-							arrResult.push(elem);
-					}
-				}
-				obj[field.name] = arrResult;
-			}
-			else {
-				obj[field.name] = null;
-				if (params[field.urlName]) {
-					obj[field.name] = field.mapFrom
-						? field.mapFrom(params[field.urlName])
-						: params[field.urlName];
-				}
-			}
+			obj[field.name] = _mapFieldToObj(field, params);
 		});
 		return obj;
 	}
@@ -83,6 +89,17 @@ function NgDeepLinker($location, $rootScope, $state) {
 		fields.push(opts);
 		return self;
 	};
+	self.onUrlUpdated = function (callback) {
+		self.onUrlUpdated_callback = callback;
+		return self;
+	};
+	self.checkUrlNow = function () {
+		var newObj = convertToObj($location.search());
+		if (self.onUrlUpdated_callback)
+			self.onUrlUpdated_callback(newObj);
+		return self;
+	};
+	
 	self.updateUrl = function (obj) {
 		// sanitize based on
 		var newParams = convertToParams(obj);
@@ -95,16 +112,12 @@ function NgDeepLinker($location, $rootScope, $state) {
 		//$location.path(urlBase).search(self.urlParam);
 		return self;
 	};
-	self.onUrlUpdated = function (callback) {
-		self.onUrlUpdated_callback = callback;
-		return self;
-	};
-	self.checkUrlNow = function () {
-		var newObj = convertToObj($location.search());
-		if (self.onUrlUpdated_callback)
-			self.onUrlUpdated_callback(newObj);
-		return self;
-	};
+	self.mapFieldFromParam = function (name) {
+		var q = $.grep(fields, function (x, i) { return x.name == name; });
+		if (q.length == 0)
+			return;
+		return _mapFieldToObj(q[0], $location.search());
+	}
 	
 	$rootScope.$on("$locationChangeSuccess", function (event, current, previous) {
 		if (UrlUpdatingProgrammatically) {
