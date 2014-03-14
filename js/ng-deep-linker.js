@@ -4,7 +4,7 @@ function NgDeepLinker($location, $rootScope, $state) {
 	var self = this;
 	var fields = [];
 	var UrlUpdatingProgrammatically = false;
-	
+
 	/// from obj to URL params
 	function convertToParams(obj) {
 		var params = {};
@@ -32,13 +32,13 @@ function NgDeepLinker($location, $rootScope, $state) {
 						? field.mapTo(obj[field.name])
 						: obj[field.name];
 				}
-				if (!params[field.urlName])
+				if (!params[field.urlName] || (field.defaultValue && obj[field.name] == field.defaultValue))
 					delete params[field.urlName];
 			}
 		});
 		return params;
 	}
-	
+
 	/// from URL params to obj for a single field
 	function _mapFieldToObj(field, params) {
 		if (field.isArray) {
@@ -56,7 +56,7 @@ function NgDeepLinker($location, $rootScope, $state) {
 			return arrResult;
 		}
 		else {
-			var result = null;
+			var result = field.defaultValue ? field.defaultValue : null;
 			if (params[field.urlName]) {
 				result = field.mapFrom
 					? field.mapFrom(params[field.urlName])
@@ -65,7 +65,7 @@ function NgDeepLinker($location, $rootScope, $state) {
 			return result;
 		}
 	}
-	
+
 	/// from URL params to obj
 	function convertToObj(params) {
 		var obj = {};
@@ -82,6 +82,7 @@ function NgDeepLinker($location, $rootScope, $state) {
 	///    mapTo: (optional) map from obj to URL param
 	///    mapFrom: (optional) map from URL param to obj
 	///    isArray: (optional) the obj param is an array
+	///    defaultValue: (optional) if == to this value, param is excluded
 	/// }
 	self.field = function (opts) {
 		if (!opts.urlName)
@@ -99,7 +100,7 @@ function NgDeepLinker($location, $rootScope, $state) {
 			self.onUrlUpdated_callback(newObj);
 		return self;
 	};
-	
+
 	self.updateUrl = function (obj) {
 		// sanitize based on
 		var newParams = convertToParams(obj);
@@ -118,21 +119,21 @@ function NgDeepLinker($location, $rootScope, $state) {
 			return;
 		return _mapFieldToObj(q[0], $location.search());
 	}
-	
+
 	$rootScope.$on("$locationChangeSuccess", function (event, current, previous) {
 		if (UrlUpdatingProgrammatically) {
 			UrlUpdatingProgrammatically = false;
 			return;
 		}
 		self.checkUrlNow();
-    });
+	});
 }
 
 // helper functions
 NgDeepLinker.toStringBasic = function (x) {
 	return "" + x;
 };
-// NOTE: you need date.js (datejs.org) to run these 2 functions:
+// NOTE: requires date.js (http://datejs.org)
 NgDeepLinker.mapFromUrl_date = function (param) {
 	if (!param)
 		return null;
@@ -149,5 +150,20 @@ NgDeepLinker.mapFromUrl_date = function (param) {
 	return new Date(Y, M, D, h, m, s);
 };
 NgDeepLinker.mapToUrl_date = function (date) {
+	if (date == null)
+		return null;
 	return date.toString("yyyyMMddHHmmss");
+};
+// NOTE: requires moment.js (http://momentjs.com/docs/)
+NgDeepLinker.mapFromUrl_moment = function (param) {
+	if (!param)
+		return null;
+	var date = NgDeepLinker.mapFromUrl_date(param);
+	return moment(date);
+};
+NgDeepLinker.mapToUrl_moment = function (mmm) {
+	if (mmm == null)
+		return null;
+	var date = mmm.toDate();
+	return NgDeepLinker.mapToUrl_date(date);
 };

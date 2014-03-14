@@ -2,6 +2,7 @@ var app = angular.module('tesddd', ['ng', 'ngRoute', 'ui.router']);
 app.config(function ($stateProvider, $urlRouterProvider) {
 	$urlRouterProvider.otherwise("/test");
 	$stateProvider
+		.state('goto', { url: '/goto', templateUrl: 'test-goto.html', controller: gotoTest })
 		.state('test', { url: '/test', templateUrl: 'test-form.html', controller: test })
 		//.state('test1', { url: '/test1' })
 	;
@@ -51,5 +52,16 @@ function test($scope, $rootScope, $location, $state) {
 	
 	$scope.doSearch = function () {
 		deepLinker.updateUrl($scope.form);
+	};
+}
+
+function gotoTest($scope, $rootScope, $location, $state) {
+	$scope.deepLinkTest = function () {
+		// go to #/test?a=fromButton&ddd=20140310190000&birds=3,2
+		$location.path("/test").search({
+			a: 'fromButton',
+			ddd: '20140310190000',
+			birds: '3,2'
+		});
 	};
 }
