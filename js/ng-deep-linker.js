@@ -147,12 +147,16 @@ function NgDeepLinker($location, $rootScope, $state) {
 		self.onUrlUpdated_callback = callback;
 		return self;
 	};
+	self.setInitialParams = function (obj) {
+		oldParams = convertToParams(obj);
+	};
 	self.checkUrlNow = function () {
 		// strip $location.search() down to just the fields we are interested in
 		var newParams = {};
 		var allParams = $location.search();
 		$.each(fields, function (i, field) {
-			newParams[field.urlName] = allParams[field.urlName];
+			if (allParams[field.urlName])
+				newParams[field.urlName] = allParams[field.urlName];
 		});
 		// if changed, proceed
 		if (!$.isEqual(newParams, oldParams)) {
@@ -161,6 +165,21 @@ function NgDeepLinker($location, $rootScope, $state) {
 			if (self.onUrlUpdated_callback)
 				self.onUrlUpdated_callback(newObj);
 		}
+		return self;
+	};
+	// do we have any params in $location.search() that we are interested in?
+	self.hasAnyParams = function () {
+		var allParams = $location.search();
+		var result = false;
+		$.each(fields, function (i, field) {
+			if (allParams[field.urlName])
+				result = true;
+		});
+		return result;
+	};
+	self.forceUrlUpdatedCallback = function (obj) {
+		if (self.onUrlUpdated_callback)
+			self.onUrlUpdated_callback(obj);
 		return self;
 	};
 	self.updateUrl = function (obj) {
@@ -200,7 +219,7 @@ function NgDeepLinker($location, $rootScope, $state) {
 		return sss.split(',');
 	};
 
-	$rootScope.$on("$locationChangeSuccess", function (event, current, previous) {
+	var unreg_locationChangeSuccess = $rootScope.$on("$locationChangeSuccess", function (event, current, previous) {
 		if (UrlUpdatingProgrammatically) {
 			UrlUpdatingProgrammatically = false;
 			return;
@@ -210,11 +229,25 @@ function NgDeepLinker($location, $rootScope, $state) {
 			return;
 		self.checkUrlNow();
 	});
+
+	self.unregister = function () {
+		unreg_locationChangeSuccess();
+	};
 }
 
 // helper functions
 NgDeepLinker.toStringBasic = function (x) {
+	if (x == null || x == undefined)
+		return "";
 	return "" + x;
+};
+NgDeepLinker.parseIntNull = function (x) {
+	if (x == null || x == undefined)
+		return null;
+	var p = parseInt(x);
+	if (!p && p != 0)
+		return null;
+	return p;
 };
 // NOTE: requires date.js (http://datejs.org)
 NgDeepLinker.mapFromUrl_date = function (param) {
