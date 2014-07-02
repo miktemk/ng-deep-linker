@@ -3,7 +3,7 @@ ng-deep-linker
 
 Helper class for changing the query string dynamically using AngularJS ui-router.
 
-#Usage
+## Initialization
 
 From within the AngularJS controller, do this.
 (Of course $location, $rootScope, $state have to come from controller parameters)
@@ -53,3 +53,14 @@ From within the AngularJS controller, do this.
 			});
 		})
 	;
+
+## Trigger functions
+
+ - checkUrlNow: will call the callback you passed in onUrlUpdated
+
+## Helper functions
+
+ - hasAnyParams: do we have any params in $location.search() that we are interested in?
+ - forceUrlUpdatedCallback: just calls the callback you passed in onUrlUpdated
+ - forceConvertToObj: returns the mapped object from current Url parameters
+ - compareObjects: returns true if they are equal with the utmost careful equality comparison.
