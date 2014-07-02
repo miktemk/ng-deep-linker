@@ -57,6 +57,7 @@ From within the AngularJS controller, do this.
 ## Trigger functions
 
  - checkUrlNow: will call the callback you passed in onUrlUpdated
+ - updateUrl: given an object, change the Url according to our mapping
 
 ## Helper functions
 
