@@ -50,6 +50,32 @@ $.isEqual = function (o1, o2, cfg, reverse) {
 	return true;
 }
 
+// elements of the array could be out of order so we do an unordered comparision to check
+// they contain the same set of elements.
+// if compareFunc is not specified, == is used.
+// Well, more like, == is used first and then compareFunc, if specified
+$.isArrayEqualUnordered = function (a1, a2, compareFunc) {
+	if (!a1 && !a2)
+		return true;
+	if ((a1 && !a2) || (!a1 && a2))
+		return false;
+	if (a1.length != a2.length)
+		return false;
+	for (var i = 0; i < a1.length; i++) {
+		var x1 = a1[i];
+		var x2 = $.firstOrDefault(a2, function (x, i) {
+			if (x1 == x)
+				return true;
+			if (compareFunc && compareFunc(x1, x))
+				return true;
+			return false;
+		});
+		if ((x1 && !x2) || (!x1 && x2)) // 2nd can never happen
+			return false;
+	}
+	return true;
+}
+
 // Find this on GitHub https://github.com/miktemk/ng-deep-linker
 function NgDeepLinker($location, $rootScope, $state) {
 	var self = this;
@@ -124,6 +150,8 @@ function NgDeepLinker($location, $rootScope, $state) {
 		var obj = {};
 		$.each(fields, function (i, field) {
 			obj[field.name] = _mapFieldToObj(field, params);
+			if (field.includeUnmapped)
+				obj[field.nameUnmapped] = params[field.urlName];
 		});
 		return obj;
 	}
@@ -136,6 +164,7 @@ function NgDeepLinker($location, $rootScope, $state) {
 	///    mapFrom: (optional) map from URL param to obj
 	///    isArray: (optional) the obj param is an array
 	///    defaultValue: (optional) if == to this value, param is excluded
+	///    compareFunc: (optional) returns true of this x1 is equal x2 in compareFunc(x1, x2)
 	/// }
 	self.field = function (opts) {
 		if (!opts.urlName)
@@ -167,21 +196,6 @@ function NgDeepLinker($location, $rootScope, $state) {
 		}
 		return self;
 	};
-	// do we have any params in $location.search() that we are interested in?
-	self.hasAnyParams = function () {
-		var allParams = $location.search();
-		var result = false;
-		$.each(fields, function (i, field) {
-			if (allParams[field.urlName])
-				result = true;
-		});
-		return result;
-	};
-	self.forceUrlUpdatedCallback = function (obj) {
-		if (self.onUrlUpdated_callback)
-			self.onUrlUpdated_callback(obj);
-		return self;
-	};
 	self.updateUrl = function (obj) {
 		// convert obj to URL parameters
 		var newParams = convertToParams(obj);
@@ -210,7 +224,8 @@ function NgDeepLinker($location, $rootScope, $state) {
 		return _mapFieldToObj(q[0], $location.search());
 	};
 
-	// other utils
+	//------------------------------------------------------------------
+	// other helpers
 	self.arrayFromUrlParam = function (name) {
 		var params = $location.search();
 		var sss = params[name];
@@ -218,6 +233,54 @@ function NgDeepLinker($location, $rootScope, $state) {
 			sss = '';
 		return sss.split(',');
 	};
+	// do we have any params in $location.search() that we are interested in?
+	self.hasAnyParams = function () {
+		var allParams = $location.search();
+		var result = false;
+		$.each(fields, function (i, field) {
+			if (allParams[field.urlName])
+				result = true;
+		});
+		return result;
+	};
+	self.forceUrlUpdatedCallback = function (obj) {
+		if (self.onUrlUpdated_callback)
+			self.onUrlUpdated_callback(obj);
+		return self;
+	};
+	// converts $location.search() to obj
+	self.forceConvertToObj = function () {
+		var newParams = {};
+		var allParams = $location.search();
+		$.each(fields, function (i, field) {
+			if (allParams[field.urlName])
+				newParams[field.urlName] = allParams[field.urlName];
+		});
+		return convertToObj(newParams);
+	}
+	self.compareObjects = function (obj1, obj2) {
+		for (var i = 0; i < fields.length; i++) {
+			var field = fields[i];
+			var val1 = obj1[field.name];
+			var val2 = obj2[field.name];
+			if (field.isArray) {
+				if (!$.isArrayEqualUnordered(val1, val2, field.compareFunc))
+					return false;
+				continue;
+			}
+			if (!val1 && !val2)
+				return true;
+			if ((val1 && !val2) || (!val1 && val2))
+				return false;
+			if (field.compareFunc) {
+				if (!field.compareFunc(val1, val2))
+					return false;
+				continue;
+			}
+			if (val1 != val2)
+				return false;
+		}
+	}
 
 	var unreg_locationChangeSuccess = $rootScope.$on("$locationChangeSuccess", function (event, current, previous) {
 		if (UrlUpdatingProgrammatically) {
@@ -283,3 +346,9 @@ NgDeepLinker.mapToUrl_moment = function (mmm) {
 	var date = mmm.toDate();
 	return NgDeepLinker.mapToUrl_date(date);
 };
+NgDeepLinker.compareFunc_moment = function (x1, x2) {
+	return x1 && x2 && x1.diff(x2) == 0;
+}
+NgDeepLinker.compareFunc_momentSeconds = function (x1, x2) {
+	return x1 && x2 && x1.diff(x2) <= 999;
+}
