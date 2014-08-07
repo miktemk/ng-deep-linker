@@ -21,6 +21,7 @@ From within the AngularJS controller, do this.
 			name: 'gridPageSize',
 			urlName: 'PageSize',
 			defaultValue: DEFAULT_ITEMS_PER_PAGE,
+			alwaysPutIntoUrl: true,
 			mapTo: NgDeepLinker.toStringBasic,
 			mapFrom: NgDeepLinker.parseIntNull
 		})
@@ -53,6 +54,17 @@ From within the AngularJS controller, do this.
 			});
 		})
 	;
+
+As you can see the chain of field() functions takes all sorts of parameters:
+
+ - name: name of object property param
+ - urlName: (optional) name of the param in url (if not specified, dafaults to name)
+ - mapTo: (optional) map from obj to URL param
+ - mapFrom: (optional) map from URL param to obj
+ - isArray: (optional) the obj param is an array
+ - defaultValue: (optional) if == to this value, param is excluded
+ - alwaysPutIntoUrl: (optional) always put this param into URL on updateUrl()
+ - compareFunc: (optional) returns true of this x1 is equal x2 in compareFunc(x1, x2)
 
 ## Trigger functions
 

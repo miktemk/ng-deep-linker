@@ -111,7 +111,7 @@ function NgDeepLinker($location, $rootScope, $state) {
 						? field.mapTo(obj[field.name])
 						: obj[field.name];
 				}
-				if (!params[field.urlName] || (field.defaultValue && obj[field.name] == field.defaultValue))
+				if (!params[field.urlName] || (field.defaultValue && obj[field.name] == field.defaultValue && !field.alwaysPutIntoUrl))
 					delete params[field.urlName];
 			}
 		});
@@ -164,6 +164,7 @@ function NgDeepLinker($location, $rootScope, $state) {
 	///    mapFrom: (optional) map from URL param to obj
 	///    isArray: (optional) the obj param is an array
 	///    defaultValue: (optional) if == to this value, param is excluded
+	///    alwaysPutIntoUrl: (optional) always put this param into URL on updateUrl()
 	///    compareFunc: (optional) returns true of this x1 is equal x2 in compareFunc(x1, x2)
 	/// }
 	self.field = function (opts) {
